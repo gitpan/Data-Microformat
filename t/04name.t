@@ -1,9 +1,10 @@
 #!perl -w
 
 use strict;
+use Test::NoWarnings;
 use Data::Microformat::hCard::name;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 my $simple = << 'EOF';
 <span class="n">
@@ -26,12 +27,22 @@ is($name->honorific_suffix, "Learned, Impartial, and Very Relaxed");
 
 my $comparison = << 'EOF';
 <div class="n">
-<div class="honorific-prefix">His High Judgmental Supremacy</div>
-<div class="given-name">Zipo</div>
-<div class="additional-name">Judiciary</div>
-<div class="family-name">Pag</div>
-<div class="honorific-suffix">Learned, Impartial, and Very Relaxed</div>
+	<div class="honorific-prefix">His High Judgmental Supremacy</div>
+	<div class="given-name">Zipo</div>
+	<div class="additional-name">Judiciary</div>
+	<div class="family-name">Pag</div>
+	<div class="honorific-suffix">Learned, Impartial, and Very Relaxed</div>
 </div>
 EOF
 
 is($name->to_hcard, $comparison);
+
+my $text_comparison = << 'EOF';
+n: 
+	honorific-prefix: His High Judgmental Supremacy
+	given-name: Zipo
+	additional-name: Judiciary
+	family-name: Pag
+	honorific-suffix: Learned, Impartial, and Very Relaxed
+EOF
+is($name->to_text, $text_comparison);

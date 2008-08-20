@@ -1,9 +1,10 @@
 #!perl -w
 
 use strict;
+use Test::NoWarnings;
 use Data::Microformat::hCard;
 
-use Test::More tests => 26;
+use Test::More tests => 27;
 
 #Basic card taken from the microformats wiki: http://microformats.org/wiki/hcard
 my $simple = << 'EOF';
@@ -58,7 +59,7 @@ ok(my @tel = $card->tel);
 is(scalar @tel, 2);
 ok(my $t = $tel[0]);
 is($t->type, "Work");
-is($t->value, "+1-650-289-4040");
+is($t->value, "1-650-289-4040");
 ok($t = $tel[1]);
 is($t->type, "Fax");
-is($t->value, "+1-650-289-4041");
+is($t->value, "1-650-289-4041");

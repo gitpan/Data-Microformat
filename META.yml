@@ -1,13 +1,14 @@
 --- #YAML:1.0
 name:                Data-Microformat
-version:             0.01
+version:             0.02
 abstract:            A module to parse and create hCards and related microformats
-license:             ~
+license:             perl
 author:              
     - Brendan O'Connor <perl@ussjoin.com>
 generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     
+    HTML::Entities:                0
     HTML::Stream:                  0
     HTML::TreeBuilder:             0
     Test::More:                    0

@@ -1,9 +1,10 @@
 #!perl -w
 
 use strict;
+use Test::NoWarnings;
 use Data::Microformat::geo;
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 
 my $simple = << 'EOF';
 <div class="geo">GEO: 
@@ -19,9 +20,16 @@ is($geo->longitude, "-122.398453");
 
 my $comparison = << 'EOF';
 <div class="geo">
-<div class="latitude">37.779598</div>
-<div class="longitude">-122.398453</div>
+	<div class="latitude">37.779598</div>
+	<div class="longitude">-122.398453</div>
 </div>
 EOF
 
 is($geo->to_hcard, $comparison);
+
+my $text_comparison = << 'EOF';
+geo: 
+	latitude: 37.779598
+	longitude: -122.398453
+EOF
+is($geo->to_text, $text_comparison);

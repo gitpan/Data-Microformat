@@ -1,9 +1,10 @@
 #!perl -w
 
 use strict;
+use Test::NoWarnings;
 use Data::Microformat::adr;
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 
 #Basic adr taken from the microformats wiki: http://microformats.org/wiki/adr
 my $simple = << 'EOF';
@@ -28,13 +29,24 @@ is($adr->country_name, "U.S.A.");
 
 my $comparison = << 'EOF';
 <div class="adr">
-<div class="street-address">665 3rd St.</div>
-<div class="extended-address">Suite 207</div>
-<div class="locality">San Francisco</div>
-<div class="region">CA</div>
-<div class="postal-code">94107</div>
-<div class="country-name">U.S.A.</div>
+	<div class="street-address">665 3rd St.</div>
+	<div class="extended-address">Suite 207</div>
+	<div class="locality">San Francisco</div>
+	<div class="region">CA</div>
+	<div class="postal-code">94107</div>
+	<div class="country-name">U.S.A.</div>
 </div>
 EOF
 
 is($adr->to_hcard, $comparison);
+
+my $text_comparison = << 'EOF';
+adr: 
+	street-address: 665 3rd St.
+	extended-address: Suite 207
+	locality: San Francisco
+	region: CA
+	postal-code: 94107
+	country-name: U.S.A.
+EOF
+is($adr->to_text, $text_comparison);

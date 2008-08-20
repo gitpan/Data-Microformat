@@ -3,10 +3,11 @@ package Data::Microformat::hCard::base;
 use strict;
 use warnings;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 our $AUTOLOAD;
 
+use HTML::Entities;
 use HTML::TreeBuilder;
 use HTML::Stream qw(html_escape);
 use Carp;
@@ -103,7 +104,8 @@ sub AUTOLOAD
 	}
 	else
 	{
-		carp(ref($self)." does not have a parameter called $name.\n") unless $name =~ m/DESTROY/;
+		# warn(ref($self)." does not have a parameter called $name.\n") unless $name =~ m/DESTROY/;
+		# Do nothing here, as there's no need to warn that some parts of hCards aren't valid
 	}
 }
 
@@ -112,6 +114,14 @@ sub parse
 	my $class = shift;
 	my $content = shift;
 	my $representative_url = shift;
+	
+	# These few transforms allow us to decode "psychotic" encodings, see t/03type.t for details
+	$content =~ tr/+/ /;
+	$content =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
+	$content =~ s/<!–(.|\n)*–>//g;
+	decode_entities($content);
+	$content =~ s/%(..)/pack("C",hex($1))/eg;
+	
 	my $tree = HTML::TreeBuilder->new_from_content($content);
 	$tree->elementify;
 	
@@ -180,27 +190,79 @@ sub from_tree
 sub to_hcard
 {
 	my $self  = shift;
-	my $thing = shift;
+	
+	my $tree = $self->_to_hcard_elements;
+	my $ret = $tree->as_HTML('<>&', "\t", { });
+	$tree->delete;
+	
+	return $ret;
+}
+
+sub to_text
+{
+	my $self  = shift;
+	
+	my $tree = $self->_to_hcard_elements;
+	my $ret = _as_text($tree);
+	$tree->delete;
+	
+	return $ret;
+}
+
+sub _as_text
+{
+	my $tree = shift;
+	
+	if (scalar $tree->descendants == 0)
+	{
+		return $tree->attr('class').": ".$tree->as_text;
+	}
+	
+	my $ret = $tree->attr('class').": \n";
+	
+	foreach my $child ($tree->content_list)
+	{
+		next unless (ref($child) =~ m/HTML::Element/);		
+		my $temp = _as_text($child);
+		$temp .= "\n" unless ($temp =~ m/\n$/s);
+		$temp =~ s/^/\t/gm;
+		$ret .= $temp;
+	}
+	return $ret;
+}
+
+sub _to_hcard_elements
+{
+	my $self  = shift;
+	
 	my $class_name = $self->{_class_name};
 	
 	if (defined $self->{kind})
 	{
 		$class_name = $self->{kind};
 	}
-	my $ret   = "<div class=\"$class_name\">\n";
+	my $root = HTML::Element->new('div', class => $class_name);
 	for my $field ($self->singular_fields)
 	{
 		next unless defined $self->{$field};
 		next if ($field eq "kind");
 		if (ref($self->{$field}) =~ m/Data::Microformat/)
 		{
-			$ret.= $self->{$field}->to_hcard;
+			# Then take the return and root it to our root
+			my $child = $self->{$field}->_to_hcard_elements;
+			if ($child->attr('class') eq "vcard")
+			{
+				$child->attr('class', $field." vcard"); # Since we know it's a vcard
+			}
+			$root->push_content($child);
 		}
 		else
 		{
 			my $name = $field;
 			$name =~ tr/_/-/;
-			$ret .= "<div class=\"$name\">".html_escape($self->{$field})."</div>\n";
+			my $child = HTML::Element->new('div', class => $name);
+			$child->push_content($self->{$field});
+			$root->push_content($child);
 		}
 	}
 	for my $field ($self->plural_fields)
@@ -213,15 +275,23 @@ sub to_hcard
 		{
 			if (ref($value) =~ m/Data::Microformat/)
 			{
-				$ret.= $value->to_hcard;
+				# Then take the return and root it to our root
+				my $child = $value->_to_hcard_elements;
+				if ($child->attr('class') eq "vcard")
+				{
+					$child->attr('class', $field." vcard"); # Since we know it's a vcard
+				}
+				$root->push_content($child);
 			}
 			else
 			{
-				$ret .= "<div class=\"$name\">".html_escape($value)."</div>\n";
+				my $child = HTML::Element->new('div', class => $name);
+				$child->push_content($value);
+				$root->push_content($child);
 			}
 		}
 	}
-	$ret .= "</div>\n";
+	return $root;
 }
 
 sub _trim
@@ -231,8 +301,8 @@ sub _trim
 	
 	if ($content)
 	{
-		$content =~ s/^\s//;
-		$content =~ s/\s$//;
+		$content =~ s/^\s+//;
+		$content =~ s/\s+$//;
 	}
 	return $content;
 }
@@ -296,12 +366,20 @@ Certain modules may override this if they have specific parsing concerns.
 This method, called on an instance of Data::Microformat::hCard::base or its subclasses, will return
 an hCard HTML representation of the data present. This is most likely to be
 used when building your own microformatted data, but can be called on parsed content as
-well. The returned data is very lightly formatted; it uses only <div> tags
-for markup, rather than <span> tags, and is not indented.
+well. The returned data is very lightly formatted, and it uses only <div> tags
+for markup, rather than <span> tags.
+
+=head2 $base->to_text
+
+This method, called on an instance of Data::Microformat::hCard::base or its subclasses, will return
+a plain text representation of the data present. This format uses indentation to show nesting,
+and attempts to be easily human-readable.
 
 =head1 DEPENDENCIES
 
 This module relies upon the following other modules:
+
+L<HTML::Entities|HTML::Entities>
 
 L<HTML::TreeBuilder|HTML::TreeBuilder>
 
@@ -324,6 +402,8 @@ Brendan O'Connor, C<< <perl at ussjoin.com> >>
 =head1 COPYRIGHT
 
 Copyright 2008, Six Apart Ltd. All rights reserved.
+
+=head1 LICENSE
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 

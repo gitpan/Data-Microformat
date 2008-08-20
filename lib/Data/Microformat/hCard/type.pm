@@ -4,6 +4,8 @@ use base qw(Data::Microformat::hCard::base);
 use strict;
 use warnings;
 
+our $VERSION = "0.02";
+
 sub class_name { "REPLACE_WITH_KIND" }
 sub plural_fields { qw(type) }
 sub singular_fields { qw(value kind) }
@@ -39,6 +41,7 @@ sub from_tree
 				{
 					$data = $class->_trim($bit->attr('href'));
 					$data =~ s/^(mailto|tel)\://;
+					$data =~ s/\?$//;
 				}
 				
 				if ($type eq $object->kind)
@@ -56,6 +59,7 @@ sub from_tree
 			# This check deals with non-nested mailto links-- such as are created by the official hCard creator.
 			my $data = $class->_trim($tree->attr('href'));
 			$data =~ s/^(mailto|tel)\://;
+			$data =~ s/\?$//;
 			$object->value($data);
 		}
 		else
@@ -137,6 +141,8 @@ Brendan O'Connor, C<< <perl at ussjoin.com> >>
 =head1 COPYRIGHT
 
 Copyright 2008, Six Apart Ltd. All rights reserved.
+
+=head1 LICENSE
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
