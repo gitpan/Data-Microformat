@@ -1,10 +1,10 @@
 package Data::Microformat::hCard::type;
-use base qw(Data::Microformat::hCard::base);
+use base qw(Data::Microformat);
 
 use strict;
 use warnings;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 sub class_name { "REPLACE_WITH_KIND" }
 sub plural_fields { qw(type) }
@@ -20,7 +20,7 @@ sub from_tree
 	return unless $tree;
 	
 	my $object = Data::Microformat::hCard::type->new;
-	$object->kind($tree->attr('class'));
+	$object->kind($class->_remove_newlines($class->_trim($tree->attr('class'))));
 	my @bits = $tree->content_list;
 	foreach my $bit (@bits)
 	{
@@ -84,7 +84,7 @@ Data::Microformat::hCard::type - A module to parse and create typed things withi
 
 =head1 VERSION
 
-This documentation refers to Data::Microformat::hCard::type version 0.01.
+This documentation refers to Data::Microformat::hCard::type version 0.03.
 
 =head1 DESCRIPTION
 
@@ -96,7 +96,7 @@ typed things (emails and phone numbers) in hCards.
 =head2 Data::Microformat::organization->from_tree($tree)
 
 This method overrides but provides the same functionality as the
-method of the same name in L<Data::Microformat::hCard::base>.
+method of the same name in L<Data::Microformat>.
 
 =head2 class_name
 

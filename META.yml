@@ -1,17 +1,44 @@
---- #YAML:1.0
-name:                Data-Microformat
-version:             0.02
-abstract:            A module to parse and create hCards and related microformats
-license:             perl
-author:              
-    - Brendan O'Connor <perl@ussjoin.com>
-generated_by:        ExtUtils::MakeMaker version 6.44
-distribution_type:   module
-requires:     
-    HTML::Entities:                0
-    HTML::Stream:                  0
-    HTML::TreeBuilder:             0
-    Test::More:                    0
+---
+name: Data-Microformat
+version: 0.03
+author:
+  - "Brendan O'Connor <perl@ussjoin.com>"
+abstract: A base class for hCards and related modules
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  HTML::Entities: 0
+  HTML::Stream: 0
+  HTML::TreeBuilder: 0
+build_requires:
+  Pod::Coverage: '>= 0.18'
+  Test::More: 0
+  Test::Pod: '>= 1.22'
+  Test::Pod::Coverage: '>= 1.08'
+provides:
+  Data::Microformat:
+    file: lib/Data/Microformat.pm
+    version: 0.03
+  Data::Microformat::adr:
+    file: lib/Data/Microformat/adr.pm
+    version: 0.03
+  Data::Microformat::geo:
+    file: lib/Data/Microformat/geo.pm
+    version: 0.03
+  Data::Microformat::hCard:
+    file: lib/Data/Microformat/hCard.pm
+    version: 0.03
+  Data::Microformat::hCard::name:
+    file: lib/Data/Microformat/hCard/name.pm
+    version: 0.03
+  Data::Microformat::hCard::organization:
+    file: lib/Data/Microformat/hCard/organization.pm
+    version: 0.03
+  Data::Microformat::hCard::type:
+    file: lib/Data/Microformat/hCard/type.pm
+    version: 0.03
+generated_by: Module::Build version 0.280801
 meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
-    version: 1.3
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2

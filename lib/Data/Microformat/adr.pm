@@ -1,10 +1,10 @@
 package Data::Microformat::adr;
-use base qw(Data::Microformat::hCard::base);
+use base qw(Data::Microformat);
 
 use strict;
 use warnings;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 sub class_name { "adr" }
 sub plural_fields { qw(type) }
@@ -20,7 +20,7 @@ Data::Microformat::adr - A module to parse and create adrs
 
 =head1 VERSION
 
-This documentation refers to Data::Microformat::adr version 0.01.
+This documentation refers to Data::Microformat::adr version 0.03.
 
 =head1 SYNOPSIS
 

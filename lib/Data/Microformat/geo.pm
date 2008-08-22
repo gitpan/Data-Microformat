@@ -1,10 +1,10 @@
 package Data::Microformat::geo;
-use base qw(Data::Microformat::hCard::base);
+use base qw(Data::Microformat);
 
 use strict;
 use warnings;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 sub class_name { "geo" }
 sub plural_fields { }
@@ -20,7 +20,7 @@ Data::Microformat::geo - A module to parse and create geos
 
 =head1 VERSION
 
-This documentation refers to Data::Microformat::geo version 0.01.
+This documentation refers to Data::Microformat::geo version 0.03.
 
 =head1 SYNOPSIS
 
