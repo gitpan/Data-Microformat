@@ -3,7 +3,7 @@ package Data::Microformat;
 use strict;
 use warnings;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 our $AUTOLOAD;
 
@@ -42,70 +42,25 @@ sub _init
 
 sub AUTOLOAD 
 {
-	my $self = shift;
+	my $self      = shift;
 	my $parameter = shift;
-	
+	$parameter    =~ s!(^\s*|\s*$)!!g if $parameter && !ref($parameter);	
+
 	my $name = $AUTOLOAD;
 	$name =~ s/.*://;
 
-	my $class_name = $self->{_class_name};
-	
-	if (exists $self->{$name})
-	{
-		if (!$self->{_singulars}{$name})
-		{
-			if ($parameter)
-			{
-				if (!$self->{$name})
-				{
-					$self->{$name} = [];
-				}
-				my $temp = $self->{$name};
-				$parameter =~ s/^\s//;
-				$parameter =~ s/\s$//;
-				push(@$temp, $parameter);
-			}
-			else
-			{
-				if (defined $self->{$name})
-				{
-					my $temp = $self->{$name};
-					if (wantarray)
-					{
-						return @$temp;
-					}
-					else
-					{
-						return @$temp[0];
-					}
-				}
-				else
-				{
-					return undef;
-				}
-			}
-		}
-		else
-		{
-			if ($parameter)
-			{
-				if (!defined $self->{$name}) # Drop all but the first saved singular thing
-				{
-					$parameter =~ s/^\s//;
-					$parameter =~ s/\s$//;
-					$self->{$name} = $parameter;
-				}
-			}
-			else
-			{
-				return $self->{$name};
-			}
-		}
-	}
-	else
-	{
-		# warn(ref($self)." does not have a parameter called $name.\n") unless $name =~ m/DESTROY/;
+	unless (exists $self->{$name}) {
+		#warn(ref($self)." does not have a parameter called $name.\n") unless $name =~ m/DESTROY/;
 		# Do nothing here, as there's no need to warn that some parts of hCards aren't valid
+		return;
+	}
+	if ($self->{_singulars}{$name}) {
+		$self->{$name} = $parameter if $parameter && (!$self->{_no_dupe_keys} || !defined $self->{$name});
+		return $self->{$name};
+	} else {
+		push @{$self->{$name}}, $parameter if $parameter;
+		my @vals =  @{$self->{$name} || []};
+		return wantarray? @vals : $vals[0];
 	}
 }
 
@@ -116,11 +71,11 @@ sub parse
 	my $representative_url = shift;
 	
 	# These few transforms allow us to decode "psychotic" encodings, see t/03type.t for details
-	$content =~ tr/+/ /;
-	$content =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
-	$content =~ s/<!–(.|\n)*–>//g;
-	decode_entities($content);
-	$content =~ s/%(..)/pack("C",hex($1))/eg;
+#	$content =~ tr/+/ /;
+#	$content =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
+#	$content =~ s/<!–(.|\n)*–>//g;
+#	$content = decode_entities($content);
+#	$content =~ s/%([A-F0-9]{2})/pack("C",hex($1))/ieg;
 	
 	my $tree = HTML::TreeBuilder->new_from_content($content);
 	$tree->elementify;
@@ -153,7 +108,7 @@ sub from_tree
 	foreach my $object_tree (@object_trees)
 	{
 		my $object = $class->new;
-		
+		$object->{_no_dupe_keys} = 1;		
 		my @bits = $object_tree->descendants;
 		
 		foreach my $bit (@bits)
@@ -175,19 +130,14 @@ sub from_tree
 				$object->$type($data);
 			}
 		}
+        $object->{_no_dupe_keys} = 0;
 		push(@objects, $object)
 	}
-	if (wantarray)
-	{
-		return @objects;
-	}
-	else
-	{
-		return $objects[0];
-	}
+
+	return wantarray? @objects : $objects[0];
 }
 
-sub to_hcard
+sub to_html
 {
 	my $self  = shift;
 	
@@ -197,6 +147,9 @@ sub to_hcard
 	
 	return $ret;
 }
+
+
+*to_hcard = \&to_html;
 
 sub to_text
 {
@@ -294,29 +247,49 @@ sub _to_hcard_elements
 	return $root;
 }
 
+sub _url_decode 
+{
+	my $class   = shift;
+	my $content = shift;
+	return unless defined $content;
+	$content =~ s/%([\da-f]{2})/chr(hex($1))/eg;
+	return $content;
+}
+
 sub _trim
 {
-	my $class = shift;
+	my $class   = shift;
 	my $content = shift;
-	
-	if ($content)
-	{
-		$content =~ s/^\s+//;
-		$content =~ s/\s+$//;
-	}
+	return unless defined $content;
+	$content =~ s/(^\s*|\s*$)//g;
 	return $content;
 }
 
 sub _remove_newlines
 {
-	my $class = shift;
+	my $class   = shift;
 	my $content = shift;
-	if ($content)
-	{
-		$content =~ s/\n/ /g;
-		$content =~ s/\r/ /g;
-	}
+	return unless defined $content;
+	$content =~ s/[\n\r]/ /g;
 	return $content;
+}
+
+
+sub _get_child_html_from_element
+{
+    my $class   = shift;
+    my $element = shift;
+    my @list    = $element->content_list;
+    return $element->as_text unless @list;
+    my $out     = "";
+    for my $child (@list) {
+        if (ref($child)) {
+            $out .= $child->as_HTML(undef,"\t",{});
+        } else {
+            $out .= $child;
+        }
+    }
+    return $out;
 }
 
 1;
@@ -373,6 +346,8 @@ reasonably well-formatted, enough to make parsing possible.
 
 Certain modules may override this if they have specific parsing concerns.
 
+=head2 $base->to_html
+
 =head2 $base->to_hcard
 
 This method, called on an instance of Data::Microformat or its subclasses, will return
@@ -380,6 +355,8 @@ an hCard HTML representation of the data present. This is most likely to be
 used when building your own microformatted data, but can be called on parsed content as
 well. The returned data is very lightly formatted, and it uses only <div> tags
 for markup, rather than <span> tags.
+
+C<to_hcard> is a synonym for C<to_html>.
 
 =head2 $base->to_text
 

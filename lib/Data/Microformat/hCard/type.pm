@@ -4,7 +4,7 @@ use base qw(Data::Microformat);
 use strict;
 use warnings;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 sub class_name { "REPLACE_WITH_KIND" }
 sub plural_fields { qw(type) }
@@ -20,6 +20,7 @@ sub from_tree
 	return unless $tree;
 	
 	my $object = Data::Microformat::hCard::type->new;
+    $object->{_no_dupe_keys} = 1;
 	$object->kind($class->_remove_newlines($class->_trim($tree->attr('class'))));
 	my @bits = $tree->content_list;
 	foreach my $bit (@bits)
@@ -39,7 +40,7 @@ sub from_tree
 				}
 				elsif ($tree->attr('class') =~ m/(email|tel)/ && $bit->tag =~ m/(a|area)/ && $bit->attr('href'))
 				{
-					$data = $class->_trim($bit->attr('href'));
+					$data = $class->_trim($class->_url_decode($bit->attr('href')));
 					$data =~ s/^(mailto|tel)\://;
 					$data =~ s/\?$//;
 				}
@@ -57,7 +58,7 @@ sub from_tree
 		elsif ($tree->attr('class') =~ m/(email|tel)/ && $tree->tag =~ m/(a|area)/ && $tree->attr('href'))
 		{
 			# This check deals with non-nested mailto links-- such as are created by the official hCard creator.
-			my $data = $class->_trim($tree->attr('href'));
+			my $data = $class->_trim($class->_url_decode($tree->attr('href')));
 			$data =~ s/^(mailto|tel)\://;
 			$data =~ s/\?$//;
 			$object->value($data);
@@ -71,6 +72,7 @@ sub from_tree
 			}
 		}
 	}
+    $object->{_no_dupe_keys} = 0;
 	return $object;
 }
 
